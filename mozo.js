@@ -220,8 +220,9 @@ function rechazarPedido(id, boton) {
 }
 
 function anularPedido(id, boton) {
-    if (!confirm("¿Anular este pedido? Se devolverá el stock y se quitará de la cuenta.")) return;
-    ejecutar(boton, () => llamarRpc('cancelar_pedido', { p_pedido_id: id }), "Pedido anulado");
+    const motivo = prompt("¿Anular este pedido? Se devolverá el stock y se quitará de la cuenta.\nMotivo de la anulación:");
+    if (motivo === null) return;
+    ejecutar(boton, () => llamarRpc('cancelar_pedido', { p_pedido_id: id, p_motivo: motivo }), "Pedido anulado");
 }
 
 function imprimirPedido(id) {
