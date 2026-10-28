@@ -8,7 +8,7 @@ let personalLista = [];
 async function iniciar() {
     const rol = await requerirRol(['admin']);
     if (!rol) return;
-    await Promise.all([cargarTurno(), cargarFacturas(), cargarCierres(), cargarMesas(), cargarPersonal()]);
+    await Promise.all([cargarTurno(), cargarFacturas(), cargarCierres(), cargarMesas(), cargarPersonal(), cargarAuditoria()]);
 }
 
 // FACTURAS POR EMITIR
@@ -110,6 +110,15 @@ function renderTurno() {
         ['Cuentas cobradas', r.cuentas],
         ['Mesas abiertas', `${mesasAbiertas.cantidad} · ${formatoPrecio(mesasAbiertas.total)}`]
     ];
+    if (r.turno) {
+        stats.splice(1, 0, ['Monto inicial', formatoPrecio(r.turno.monto_inicial)],
+                           ['Efectivo esperado', formatoPrecio(r.turno.efectivo_esperado)]);
+    }
+    const abierta = Boolean(r.turno && r.turno.estado === 'abierta');
+    document.getElementById('form-abrir-caja').style.display = abierta ? 'none' : 'flex';
+    document.getElementById('turno-sub').textContent = abierta
+        ? `(caja abierta desde ${formatoFechaHora(r.desde)})`
+        : '(caja cerrada: no se puede vender)';
     document.getElementById('stats-turno').innerHTML = stats.map(([etiqueta, valor, destacada]) => `
         <div class="stat ${destacada ? 'destacada' : ''}">
             <div class="etiqueta">${etiqueta}</div>
@@ -121,7 +130,7 @@ function renderTurno() {
             <tr><td>${escapeHtml(p.nombre)}</td><td class="num">${Number(p.cantidad)}</td><td class="num">${formatoPrecio(p.total)}</td></tr>`).join('')
         : '<tr><td colspan="3" class="vacio">Todavía no hay ventas cobradas en este turno</td></tr>';
 
-    document.getElementById('btn-cerrar-caja').disabled = r.cuentas === 0;
+    document.getElementById('btn-cerrar-caja').disabled = !abierta;
 }
 
 function imprimirResumen(resumen, titulo) {
@@ -135,7 +144,14 @@ function imprimirResumen(resumen, titulo) {
             ['Cuentas', String(resumen.cuentas)],
             ['Efectivo', formatoPrecio(resumen.por_metodo.efectivo)],
             ['Tarjeta', formatoPrecio(resumen.por_metodo.tarjeta)],
-            ['Transferencia', formatoPrecio(resumen.por_metodo.transferencia)]
+            ['Transferencia', formatoPrecio(resumen.por_metodo.transferencia)],
+            ...(resumen.turno ? [
+                ['Monto inicial', formatoPrecio(resumen.turno.monto_inicial)],
+                ['Efectivo esperado', formatoPrecio(resumen.turno.efectivo_esperado)],
+                ...(resumen.turno.efectivo_contado === null ? [] : [
+                    ['Efectivo contado', formatoPrecio(resumen.turno.efectivo_contado)],
+                    ['Diferencia', formatoPrecio(resumen.turno.diferencia)]])
+            ] : [])
         ],
         total: resumen.total
     });
@@ -146,19 +162,27 @@ function imprimirTurno() {
 }
 
 async function cerrarCaja(boton) {
-    if (!resumenTurno || resumenTurno.cuentas === 0) {
-        mostrarAviso("No hay ventas cobradas desde el último cierre", 'error');
+    if (!resumenTurno || !resumenTurno.turno || resumenTurno.turno.estado !== 'abierta') {
+        mostrarAviso("La caja no está abierta", 'error');
         return;
     }
-    let mensaje = `¿Cerrar la caja con ${formatoPrecio(resumenTurno.total)} cobrados?`;
+    const esperado = resumenTurno.turno.efectivo_esperado;
+    const texto = prompt(`Arqueo: cuenta el efectivo de la caja.\nDebería haber ${formatoPrecio(esperado)} (monto inicial + efectivo cobrado).\n\nEfectivo contado (Gs.):`);
+    if (texto === null) return;
+    const contado = Number(String(texto).replace(/\D/g, ''));
+    if (texto.trim() === '' || !Number.isFinite(contado)) {
+        mostrarAviso("Indica el efectivo contado", 'error');
+        return;
+    }
+    let mensaje = `Contado ${formatoPrecio(contado)} · diferencia ${formatoPrecio(contado - esperado)}.\n¿Cerrar la caja?`;
     if (mesasAbiertas.cantidad > 0) {
-        mensaje += `\n\nHay ${mesasAbiertas.cantidad} mesa(s) abierta(s): se incluirán en el próximo cierre cuando se cobren.`;
+        mensaje += `\n\nHay ${mesasAbiertas.cantidad} mesa(s) abierta(s): se cobrarán cuando se vuelva a abrir la caja.`;
     }
     if (!confirm(mensaje)) return;
 
     boton.disabled = true;
     try {
-        const cierre = await llamarRpc('cierre_caja');
+        const cierre = await llamarRpc('cierre_caja', { p_efectivo_contado: contado });
         const resumen = await llamarRpc('resumen_ventas', { p_cierre_id: cierre.id });
         imprimirResumen(resumen, `Cierre de caja #${cierre.id}`);
         mostrarAviso(`Caja cerrada: ${formatoPrecio(cierre.total)}`);
@@ -173,7 +197,8 @@ async function cerrarCaja(boton) {
 async function cargarCierres() {
     const { data, error } = await supabaseClient
         .from('cierres_caja')
-        .select('id, hasta, cuentas, total')
+        .select('id, hasta, cuentas, total, diferencia')
+        .eq('estado', 'cerrada')
         .order('id', { ascending: false })
         .limit(15);
     if (error) { mostrarAviso("Error al cargar cierres: " + error.message, 'error'); return; }
@@ -185,9 +210,10 @@ async function cargarCierres() {
                 <td>${formatoFechaHora(c.hasta)}</td>
                 <td class="num">${Number(c.cuentas)}</td>
                 <td class="num">${formatoPrecio(c.total)}</td>
+                <td class="num">${c.diferencia === null ? '—' : formatoPrecio(c.diferencia)}</td>
                 <td class="num"><button class="icon-btn" title="Reimprimir" onclick="reimprimirCierre(${Number(c.id)})"><span class="material-icons">print</span></button></td>
             </tr>`).join('')
-        : '<tr><td colspan="5" class="vacio">Aún no hay cierres</td></tr>';
+        : '<tr><td colspan="6" class="vacio">Aún no hay cierres</td></tr>';
 }
 
 async function reimprimirCierre(id) {

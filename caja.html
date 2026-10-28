@@ -31,12 +31,18 @@
         <!-- TURNO ACTUAL -->
         <section class="panel">
             <div class="panel-head">
-                <h3>Turno actual <small style="color:#777; font-weight:normal;">(ventas desde el último cierre)</small></h3>
+                <h3>Turno actual <small id="turno-sub" style="color:#777; font-weight:normal;"></small></h3>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <input type="date" id="informe-fecha" class="input-stylish" title="Fecha del informe diario" style="flex:0 0 auto;">
+                    <button class="btn-sec" onclick="imprimirInformeDiario()"><span class="material-icons">summarize</span>Informe diario</button>
                     <button class="btn-sec" onclick="imprimirTurno()"><span class="material-icons">print</span>Imprimir resumen</button>
                     <button class="btn-sec ok" id="btn-cerrar-caja" onclick="cerrarCaja(this)"><span class="material-icons">lock</span>Cerrar caja</button>
                 </div>
             </div>
+            <form id="form-abrir-caja" class="form-inline" onsubmit="abrirCaja(event)" style="display:none; margin-bottom:15px;">
+                <input type="number" id="monto-inicial" class="input-stylish" placeholder="Monto inicial para vueltos (Gs.)" min="0" step="1" required>
+                <button type="submit" class="btn-sec ok"><span class="material-icons">lock_open</span>Abrir caja</button>
+            </form>
             <div id="stats-turno" class="stat-grid"></div>
             <table class="tabla">
                 <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Total</th></tr></thead>
@@ -62,9 +68,36 @@
         <section class="panel">
             <h3>Cierres anteriores</h3>
             <table class="tabla">
-                <thead><tr><th>#</th><th>Fecha</th><th class="num">Cuentas</th><th class="num">Total</th><th></th></tr></thead>
+                <thead><tr><th>#</th><th>Fecha</th><th class="num">Cuentas</th><th class="num">Total</th><th class="num">Arqueo</th><th></th></tr></thead>
                 <tbody id="tabla-cierres"></tbody>
             </table>
+        </section>
+
+        <!-- AUDITORÍA -->
+        <section class="panel">
+            <h3>Auditoría</h3>
+            <form class="form-inline" onsubmit="event.preventDefault(); cargarAuditoria()" style="margin-bottom:15px;">
+                <input type="datetime-local" id="aud-desde" class="input-stylish" title="Desde">
+                <input type="datetime-local" id="aud-hasta" class="input-stylish" title="Hasta">
+                <select id="aud-tabla" class="input-stylish">
+                    <option value="">Todas las tablas</option>
+                    <option>productos</option><option>categorias</option><option>personal</option>
+                    <option>mesas</option><option>cuentas</option><option>pedidos</option>
+                    <option>pedido_items</option><option>cierres_caja</option><option>opiniones</option>
+                </select>
+                <select id="aud-accion" class="input-stylish">
+                    <option value="">Toda acción</option>
+                    <option value="insert">insert</option><option value="update">update</option>
+                    <option value="delete">delete</option><option value="rollback">rollback</option>
+                </select>
+                <button type="submit" class="btn-sec ok">Buscar</button>
+            </form>
+            <div class="tabla-scroll">
+                <table class="tabla">
+                    <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Registro</th><th>Motivo</th><th></th></tr></thead>
+                    <tbody id="tabla-auditoria"></tbody>
+                </table>
+            </div>
         </section>
 
         <div class="caja-grid">
@@ -117,6 +150,8 @@
     </div>
 
     <script src="utils.js?v=20261028j"></script>
+    <script src="auditoria.js?v=20261029a"></script>
+    <script src="turno.js?v=20261029a"></script>
     <script src="caja.js?v=20261028j"></script>
 </body>
 </html>
