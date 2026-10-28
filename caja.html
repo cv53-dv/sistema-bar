@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caja | Mi Bar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=20261028j">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="config.js?v=20261028j"></script>
+</head>
+<body class="admin-body">
+
+    <div id="toast-container"></div>
+
+    <header class="admin-header">
+        <h1 class="admin-title">Caja</h1>
+        <nav class="staff-nav">
+            <a href="mozo.html">Mesas</a>
+            <a href="comandas.html">Comandas</a>
+            <a href="caja.html" class="active">Caja</a>
+            <a href="admin.html">Productos</a>
+            <button class="btn-logout" onclick="cerrarSesion()" title="Salir"><span class="material-icons">logout</span></button>
+        </nav>
+    </header>
+
+    <main class="staff-main">
+
+        <!-- TURNO ACTUAL -->
+        <section class="panel">
+            <div class="panel-head">
+                <h3>Turno actual <small style="color:#777; font-weight:normal;">(ventas desde el último cierre)</small></h3>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn-sec" onclick="imprimirTurno()"><span class="material-icons">print</span>Imprimir resumen</button>
+                    <button class="btn-sec ok" id="btn-cerrar-caja" onclick="cerrarCaja(this)"><span class="material-icons">lock</span>Cerrar caja</button>
+                </div>
+            </div>
+            <div id="stats-turno" class="stat-grid"></div>
+            <table class="tabla">
+                <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Total</th></tr></thead>
+                <tbody id="tabla-productos"></tbody>
+            </table>
+        </section>
+
+        <!-- FACTURAS POR EMITIR -->
+        <section class="panel">
+            <div class="panel-head">
+                <h3>Facturas por emitir <span id="contador-facturas" class="tag tag-pendiente" style="margin-left:6px;">0</span></h3>
+            </div>
+            <p style="color:#888; font-size:0.8rem; margin-bottom:12px;">Cuentas cobradas con datos de factura. Emite cada factura en tu sistema de facturación y márcala aquí con su número.</p>
+            <div class="tabla-scroll">
+                <table class="tabla">
+                    <thead><tr><th>Fecha</th><th>Mesa</th><th>RUC / C.I.</th><th>Nombre / razón social</th><th class="num">Total</th><th></th></tr></thead>
+                    <tbody id="tabla-facturas"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CIERRES ANTERIORES -->
+        <section class="panel">
+            <h3>Cierres anteriores</h3>
+            <table class="tabla">
+                <thead><tr><th>#</th><th>Fecha</th><th class="num">Cuentas</th><th class="num">Total</th><th></th></tr></thead>
+                <tbody id="tabla-cierres"></tbody>
+            </table>
+        </section>
+
+        <div class="caja-grid">
+            <!-- MESAS Y QR -->
+            <section class="panel">
+                <div class="panel-head">
+                    <h3>Mesas y códigos QR</h3>
+                    <button class="btn-sec" onclick="imprimirTodosLosQR()"><span class="material-icons">qr_code_2</span>Imprimir todos</button>
+                </div>
+                <form class="form-inline" onsubmit="agregarMesa(event)" style="margin-bottom:15px;">
+                    <input type="text" id="nueva-mesa" class="input-stylish" placeholder="Nombre (ej. Mesa 9, Terraza 2)" maxlength="30" required>
+                    <button type="submit" class="btn-sec ok"><span class="material-icons">add</span>Agregar</button>
+                </form>
+                <table class="tabla">
+                    <tbody id="tabla-mesas"></tbody>
+                </table>
+            </section>
+
+            <!-- PERSONAL -->
+            <section class="panel">
+                <h3>Personal</h3>
+                <p style="color:#888; font-size:0.8rem; margin-bottom:12px;">
+                    Primero crea el usuario en Supabase → Authentication → Users. Luego asígnale un rol aquí.
+                </p>
+                <form class="form-inline" onsubmit="asignarRol(event)" style="margin-bottom:15px;">
+                    <input type="email" id="personal-email" class="input-stylish" placeholder="email@ejemplo.com" required>
+                    <select id="personal-rol" class="input-stylish" style="flex:0 0 110px; min-width:0;">
+                        <option value="mozo">Mozo</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button type="submit" class="btn-sec ok">Asignar</button>
+                </form>
+                <table class="tabla">
+                    <tbody id="tabla-personal"></tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+
+    <!-- MODAL: QR DE UNA MESA -->
+    <div id="modal-qr" class="modal" onclick="if(event.target == this) cerrarModal('modal-qr')">
+        <div class="modal-content" style="max-width:360px; padding:30px; text-align:center;">
+            <div class="close-btn-float" onclick="cerrarModal('modal-qr')">✕</div>
+            <h3 id="qr-titulo" style="color:var(--gold); font-family:'Playfair Display', serif; font-size:1.5rem; margin-bottom:15px;"></h3>
+            <div id="qr-imagen" style="background:white; padding:10px; border-radius:12px; display:inline-block;"></div>
+            <a id="qr-link" href="#" target="_blank" rel="noopener" style="display:block; color:#888; font-size:0.7rem; margin-top:12px; word-break:break-all;"></a>
+            <p id="qr-aviso" style="display:none; color:var(--red-danger); font-size:0.8rem; margin-top:12px; text-align:left;"></p>
+            <button class="btn-big-action" id="qr-imprimir">IMPRIMIR QR</button>
+        </div>
+    </div>
+
+    <script src="utils.js?v=20261028j"></script>
+    <script src="caja.js?v=20261028j"></script>
+</body>
+</html>

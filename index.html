@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Bar | Carta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:ital,wght@1,400;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=20261028j">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="config.js?v=20261028j"></script>
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <header class="hero-optimizado">
+        <img src="https://images.unsplash.com/photo-1572116469696-31de0f17cc34?auto=format&fit=crop&w=800&q=70" 
+             class="hero-bg" alt="Ambiente">
+        <div class="overlay">
+            <div class="logo-area">
+                <h1>MI BAR</h1>
+                <p>Coctelería de Autor & Gastronomía</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="search-wrapper">
+        <div class="search-box">
+            <span class="search-icon">✦</span>
+            <input type="text" id="search-input" placeholder="Buscar cocteles, platos...">
+        </div>
+    </div>
+
+    <div id="mesa-banner" class="mesa-banner" style="display:none;"></div>
+
+    <div class="filters-container">
+        <!-- Los botones de categoría se generan desde la base de datos (script.js) -->
+        <nav class="filters" id="filtros-carta">
+            <button class="filter-btn active" onclick="filtrar('todos', this)">⭐ Todo</button>
+        </nav>
+    </div>
+
+    <main class="container">
+        <h3 class="section-title" style="color: var(--gold); font-family: 'Playfair Display'; margin-bottom: 20px;">Nuestra Carta</h3>
+        <div id="menu-grid" class="menu-grid">
+            </div>
+    </main>
+
+    <footer>
+        <p>Mi Bar © 2026</p>
+        <a href="login.html" class="admin-link">🔒 Acceso Gerencial</a>
+    </footer>
+
+    <div id="modal-detalle" class="modal" onclick="if(event.target == this) cerrarDetalle()">
+        <div class="modal-content modal-card">
+            <div class="close-btn-float" onclick="cerrarDetalle()">✕</div>
+            
+            <div class="modal-image-wrapper">
+                <img id="det-img" src="" alt="Producto" class="modal-img-full">
+            </div>
+            
+            <div class="modal-body" style="padding: 25px; position: relative; z-index: 2;">
+                <h2 id="det-titulo" style="font-family:'Playfair Display'; color: var(--gold); font-size: 1.8rem; margin-bottom: 10px;"></h2>
+                <span id="det-precio" style="display:block; color:white; font-size: 1.4rem; font-weight:bold; margin-bottom: 20px;"></span>
+                
+                <p id="det-desc" style="color: #ccc; line-height: 1.6; margin-bottom: 25px;"></p>
+
+                <div id="box-curiosidad" style="display:none; background: rgba(255,215,0,0.1); padding: 15px; border-left: 3px solid var(--gold); border-radius: 8px; margin-bottom: 25px;">
+                    <span style="color:var(--gold); font-weight:bold; display:block; margin-bottom:5px;">✨ Curiosidad del Chef</span>
+                    <p id="det-curiosidad" style="color: #bbb; font-style: italic; font-size: 0.9rem; margin:0;"></p>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                    <span style="color:#666; font-size:0.9rem;">Valoración promedio:</span>
+                    <span id="det-rating-big" style="color:#FFD700; font-size:1.3rem; font-weight:bold;">★ 5.0</span>
+                </div>
+
+                <!-- Solo visible si la carta se abrió desde el QR de una mesa -->
+                <div id="box-agregar" class="agregar-box" style="display:none;">
+                    <div class="qty-control">
+                        <button onclick="cambiarCantidadDetalle(-1)">−</button>
+                        <span class="qty" id="det-cantidad">1</span>
+                        <button onclick="cambiarCantidadDetalle(1)">+</button>
+                    </div>
+                    <button class="btn-big-action" onclick="agregarAlCarrito()">AGREGAR AL PEDIDO</button>
+                </div>
+
+                <button class="btn-big-action" id="btn-opinar" onclick="abrirOpinionDesdeDetalle()">
+                    Dejar Opinión
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-opinion" class="modal" onclick="if(event.target == this) cerrarModalOpiniones()">
+        <div class="modal-content" style="padding: 30px; text-align: center; max-width: 400px;">
+            <span class="close-btn-float" style="top:10px; right:10px;" onclick="cerrarModalOpiniones()">×</span>
+            
+            <h3 style="color:var(--gold); margin-bottom:20px; font-family:'Playfair Display', serif; font-size: 1.5rem;">
+                Calificar Experiencia
+            </h3>
+            
+            <div class="stars" id="stars-container" style="font-size:3rem; color:#444; cursor:pointer; margin-bottom:20px;">
+                <span data-val="1">★</span><span data-val="2">★</span><span data-val="3">★</span><span data-val="4">★</span><span data-val="5">★</span>
+            </div>
+            
+            <input type="text" id="cliente-nombre" placeholder="Tu nombre (Opcional)" class="input-stylish" style="width:100%; margin-bottom:10px;">
+            <textarea id="cliente-comentario" rows="3" placeholder="¿Qué te pareció?" class="input-stylish" style="width:100%; margin-bottom:20px;"></textarea>
+            
+            <button class="btn-big-action" id="btn-enviar-opinion" onclick="enviarOpinion()">ENVIAR CALIFICACIÓN</button>
+        </div>
+    </div>
+
+    <!-- PEDIDO DEL CLIENTE (QR de mesa) -->
+    <button id="cart-fab" class="cart-fab" onclick="abrirCarrito()">🛒 Ver mi pedido · <span id="cart-resumen"></span></button>
+
+    <div id="modal-carrito" class="modal" onclick="if(event.target == this) cerrarModal('modal-carrito')">
+        <div class="modal-content" style="max-width:450px;">
+            <div class="close-btn-float" onclick="cerrarModal('modal-carrito')">✕</div>
+            <div class="modal-scroll">
+                <h3 style="color:var(--gold); font-family:'Playfair Display', serif; font-size:1.5rem;">Tu pedido</h3>
+                <p id="carrito-mesa" style="color:#888; font-size:0.85rem; margin-bottom:10px;"></p>
+                <div id="carrito-items" class="lista-scroll"></div>
+                <textarea id="carrito-nota" class="input-stylish" rows="2" maxlength="300" placeholder="¿Alguna indicación? (sin hielo, sin cebolla...)" style="margin-top:12px;"></textarea>
+                <div class="pie-modal">
+                    <div class="resumen-envio" style="margin-top:0;">
+                        <span style="color:#aaa;">Total estimado</span>
+                        <span id="carrito-total" style="color:var(--gold); font-size:1.3rem;"></span>
+                    </div>
+                    <button class="btn-big-action" id="btn-enviar-carrito" onclick="enviarPedidoCliente(this)">ENVIAR PEDIDO</button>
+                    <p style="color:#666; font-size:0.75rem; text-align:center; margin-top:10px;">Un mozo confirmará tu pedido en breve.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js?v=20261028j"></script>
+    <script src="script.js?v=20261028j"></script>
+</body>
+</html>

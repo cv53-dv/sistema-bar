@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesas | Mi Bar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=20261028j">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="config.js?v=20261028j"></script>
+</head>
+<body class="admin-body">
+
+    <div id="toast-container"></div>
+
+    <header class="admin-header">
+        <h1 class="admin-title">Mesas</h1>
+        <nav class="staff-nav">
+            <a href="mozo.html" class="active">Mesas</a>
+            <a href="comandas.html">Comandas</a>
+            <a href="caja.html" data-solo-admin style="display:none;">Caja</a>
+            <a href="admin.html" data-solo-admin style="display:none;">Productos</a>
+            <button class="btn-logout" onclick="cerrarSesion()" title="Salir"><span class="material-icons">logout</span></button>
+        </nav>
+    </header>
+
+    <main class="staff-main">
+
+        <!-- VISTA 1: TODAS LAS MESAS -->
+        <section id="vista-mesas" class="panel">
+            <div class="panel-head">
+                <h3>Salón</h3>
+                <span style="color:#777; font-size:0.8rem;">Toca una mesa para ver o cargar pedidos</span>
+            </div>
+            <div id="grid-mesas" class="mesas-grid">
+                <div class="vacio" style="grid-column:1/-1;">⟳ Cargando mesas...</div>
+            </div>
+        </section>
+
+        <!-- VISTA 2: DETALLE DE UNA MESA -->
+        <section id="vista-mesa" class="panel" style="display:none;">
+            <div class="panel-head">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="btn-sec" onclick="volverAMesas()"><span class="material-icons">arrow_back</span></button>
+                    <h3 id="mesa-titulo"></h3>
+                </div>
+            </div>
+
+            <div class="cuenta-resumen" style="margin-bottom:20px;">
+                <div>
+                    <div style="color:#888; font-size:0.75rem; text-transform:uppercase;">Total de la cuenta</div>
+                    <div id="mesa-total" class="cuenta-total">$0.00</div>
+                </div>
+                <div class="acciones-cuenta">
+                    <button class="btn-sec" onclick="abrirNuevoPedido()"><span class="material-icons">add</span>Nuevo pedido</button>
+                    <button class="btn-sec" id="btn-precuenta" onclick="imprimirPrecuenta()"><span class="material-icons">receipt</span>Precuenta</button>
+                    <button class="btn-sec ok" id="btn-cobrar" onclick="abrirCobro()"><span class="material-icons">payments</span>Cobrar</button>
+                </div>
+            </div>
+
+            <div id="lista-pedidos"></div>
+        </section>
+    </main>
+
+    <!-- MODAL: NUEVO PEDIDO -->
+    <div id="modal-pedido" class="modal" onclick="if(event.target == this) cerrarModal('modal-pedido')">
+        <div class="modal-content" style="max-width:520px;">
+            <div class="close-btn-float" onclick="cerrarModal('modal-pedido')">✕</div>
+            <div class="modal-scroll">
+                <h3 style="color:var(--gold); font-family:'Playfair Display', serif; font-size:1.4rem;">Nuevo pedido</h3>
+                <p id="pedido-mesa-nombre" style="color:#888; font-size:0.85rem; margin-bottom:10px;"></p>
+
+                <input type="text" id="buscar-producto" class="input-stylish" placeholder="Buscar producto..." oninput="renderSelector()">
+                <div id="selector-filtros" class="selector-filtros"></div>
+                <div id="selector-productos" class="lista-scroll"></div>
+
+                <textarea id="pedido-nota" class="input-stylish" rows="2" maxlength="300" placeholder="Nota para la barra/cocina (opcional)" style="margin-top:12px;"></textarea>
+
+                <div class="pie-modal">
+                    <div class="resumen-envio" style="margin-top:0;">
+                        <span id="resumen-cantidad" style="color:#aaa;">0 productos</span>
+                        <span id="resumen-total" style="color:var(--gold); font-size:1.2rem;">Gs. 0</span>
+                    </div>
+                    <button class="btn-big-action" id="btn-enviar-pedido" onclick="enviarPedido(this)">ENVIAR PEDIDO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: COBRAR -->
+    <div id="modal-cobro" class="modal" onclick="if(event.target == this) cerrarModal('modal-cobro')">
+        <div class="modal-content" style="max-width:420px;">
+            <div class="close-btn-float" onclick="cerrarModal('modal-cobro')">✕</div>
+            <div class="modal-scroll">
+                <h3 style="color:var(--gold); font-family:'Playfair Display', serif; font-size:1.4rem;">Cobrar cuenta</h3>
+                <p id="cobro-mesa" style="color:#888; font-size:0.85rem;"></p>
+                <div id="cobro-total" class="cuenta-total" style="margin-top:10px;"></div>
+
+                <div class="metodos-pago">
+                    <button class="metodo-btn" data-metodo="efectivo" onclick="seleccionarMetodo('efectivo')"><span class="material-icons">payments</span>Efectivo</button>
+                    <button class="metodo-btn" data-metodo="tarjeta" onclick="seleccionarMetodo('tarjeta')"><span class="material-icons">credit_card</span>Tarjeta</button>
+                    <button class="metodo-btn" data-metodo="transferencia" onclick="seleccionarMetodo('transferencia')"><span class="material-icons">swap_horiz</span>Transf.</button>
+                </div>
+
+                <div id="box-efectivo" class="input-group" style="display:none;">
+                    <label>Paga con</label>
+                    <input type="number" id="paga-con" class="input-stylish" min="0" step="1" placeholder="Monto recibido en Gs." oninput="calcularVuelto()">
+                    <div id="vuelto" class="vuelto"></div>
+                </div>
+
+                <!-- DATOS PARA FACTURA (opcional; sin marcar = consumidor final) -->
+                <div class="factura-box">
+                    <label class="switch-auto"><input type="checkbox" id="con-factura" onchange="cambiarFactura(this.checked)"> Factura con datos (RUC o cédula)</label>
+                    <div id="box-factura" style="display:none; margin-top:12px;">
+                        <div class="input-group">
+                            <label for="factura-documento">RUC o cédula</label>
+                            <input type="text" id="factura-documento" class="input-stylish" placeholder="RUC 80012345-0 o cédula 1234567" maxlength="16" autocomplete="off" oninput="revisarDocumentoFactura()">
+                            <div id="documento-ayuda" class="ayuda-campo"></div>
+                        </div>
+                        <div class="input-group">
+                            <label for="factura-razon">Nombre o razón social</label>
+                            <input type="text" id="factura-razon" class="input-stylish" maxlength="120" placeholder="Nombre o empresa">
+                        </div>
+                        <div class="input-group" style="margin-bottom:0;">
+                            <label for="factura-email">Email <small style="color:#666; font-weight:normal;">(opcional)</small></label>
+                            <input type="email" id="factura-email" class="input-stylish" maxlength="120" placeholder="Para enviar la factura">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pie-modal">
+                    <label class="switch-auto"><input type="checkbox" id="imprimir-ticket" checked> Imprimir ticket</label>
+                    <button class="btn-big-action" id="btn-confirmar-cobro" onclick="confirmarCobro(this)">CONFIRMAR COBRO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js?v=20261028j"></script>
+    <script src="mozo.js?v=20261028j"></script>
+</body>
+</html>

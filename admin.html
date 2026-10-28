@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Gerencial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=20261028j">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="config.js?v=20261028j"></script>
+</head>
+<body class="admin-body">
+
+    <header class="admin-header">
+        <div style="display:flex; align-items:center;">
+            <h1 class="admin-title">Productos</h1>
+            <span class="admin-badge">ADMIN</span>
+        </div>
+        <nav class="staff-nav">
+            <a href="mozo.html">Mesas</a>
+            <a href="comandas.html">Comandas</a>
+            <a href="caja.html">Caja</a>
+            <a href="admin.html" class="active">Productos</a>
+            <a href="index.html">Ver Carta</a>
+            <button class="btn-logout" onclick="cerrarSesion()" title="Salir"><span class="material-icons">logout</span></button>
+        </nav>
+    </header>
+
+    <div id="toast-container"></div>
+
+    <div class="dashboard-grid">
+
+        <div class="columna-lateral">
+        <div class="upload-zone">
+            <h3 style="color:white; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px;">Gestión de Producto</h3>
+            
+            <form id="form-producto">
+                <input type="hidden" id="edit-id">
+
+                <div class="input-group">
+                    <label>Nombre</label>
+                    <input type="text" id="nombre" class="input-stylish" required>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div class="input-group">
+                        <label>Precio</label>
+                        <input type="number" id="precio" class="input-stylish" min="0" step="1" placeholder="Ej. 35000" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Categoría</label>
+                        <!-- Opciones cargadas desde la tabla categorias (admin.js) -->
+                        <select id="categoria" class="input-stylish" required></select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Stock (unidades) <small style="color:#666; font-weight:normal;">— vacío = sin control (ej. cócteles)</small></label>
+                    <input type="number" id="stock" class="input-stylish" min="0" step="1" placeholder="Sin control de stock">
+                </div>
+
+                <div class="input-group">
+                    <label>Foto <small style="color:#666; font-weight:normal;">(Opcional al editar)</small></label>
+                    <div class="file-upload-wrapper" onclick="document.getElementById('imagen-file').click()">
+                        <span class="material-icons" style="font-size:2rem; color:#666; margin-bottom:5px;">cloud_upload</span>
+                        <span class="file-upload-text">Toca para subir imagen</span>
+                        <input type="file" id="imagen-file" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Descripción</label>
+                    <textarea id="descripcion" class="input-stylish" rows="2"></textarea>
+                </div>
+
+                <div style="background:#25252b; padding:15px; border-radius:10px; border:1px dashed #444; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="color:var(--gold); font-size:0.8rem; font-weight:bold;">✨ Dato Curioso (IA)</span>
+                        <button type="button" id="btn-ia" onclick="generarCuriosidad()" style="background:var(--gold); border:none; padding:5px 12px; border-radius:20px; font-weight:bold; cursor:pointer; font-size:0.7rem;">Generar</button>
+                    </div>
+                    <span id="loader-ia" style="display:none; color:#888; font-size:0.7rem;">Conectando...</span>
+                    <textarea id="curiosidad" class="input-stylish" rows="2" style="font-size:0.85rem; background:#1a1a20;" placeholder="Automático..."></textarea>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                    <input type="checkbox" id="destacado" style="width:18px; height:18px; accent-color:var(--gold);">
+                    <label for="destacado" style="margin:0; cursor:pointer; color:#ccc;">Marcar como "Destacado" 🌟</label>
+                </div>
+
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button type="submit" class="btn-big-action" id="btn-submit">GUARDAR PRODUCTO</button>
+                    <button type="button" id="btn-cancelar" onclick="cancelarEdicion()" style="background:transparent; border:1px solid #555; color:#ccc; padding:15px; border-radius:12px; cursor:pointer; display:none;">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- CATEGORÍAS -->
+        <div class="upload-zone" id="zona-categorias">
+            <h3 style="color:white; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:10px;">Categorías</h3>
+            <p style="color:#888; font-size:0.8rem; margin-bottom:12px;">El orden de esta lista es el orden de la carta. Las ocultas no se muestran a los clientes, pero los mozos sí pueden cargarlas.</p>
+            <form class="form-inline" onsubmit="guardarCategoria(event)" style="margin-bottom:12px;">
+                <input type="hidden" id="categoria-edit-id">
+                <input type="text" id="categoria-emoji" class="input-stylish" placeholder="🍰" maxlength="8" title="Ícono (emoji, opcional)" style="flex:0 0 64px; min-width:0; text-align:center;">
+                <input type="text" id="categoria-nombre" class="input-stylish" placeholder="Nombre (ej. Postres)" maxlength="40" required>
+                <button type="submit" class="btn-sec ok" id="btn-categoria">Agregar</button>
+                <button type="button" class="btn-sec" id="btn-categoria-cancelar" onclick="cancelarEdicionCategoria()" style="display:none;">Cancelar</button>
+            </form>
+            <div id="lista-categorias"></div>
+        </div>
+        </div>
+
+        <div class="inventory-zone">
+            <h3 style="color:white; margin-bottom:20px;">Inventario</h3>
+            <div id="lista-admin" class="inventory-list">
+                </div>
+        </div>
+
+    </div>
+
+    <script src="utils.js?v=20261028j"></script>
+    <script src="admin.js?v=20261028j"></script>
+</body>
+</html>

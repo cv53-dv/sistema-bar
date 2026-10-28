@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comandas | Mi Bar</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=20261028j">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+    <script src="config.js?v=20261028j"></script>
+</head>
+<body class="admin-body">
+
+    <div id="toast-container"></div>
+
+    <header class="admin-header">
+        <h1 class="admin-title">Comandas</h1>
+        <nav class="staff-nav">
+            <a href="mozo.html">Mesas</a>
+            <a href="comandas.html" class="active">Comandas</a>
+            <a href="caja.html" data-solo-admin style="display:none;">Caja</a>
+            <a href="admin.html" data-solo-admin style="display:none;">Productos</a>
+            <button class="btn-logout" onclick="cerrarSesion()" title="Salir"><span class="material-icons">logout</span></button>
+        </nav>
+    </header>
+
+    <main class="staff-main">
+        <div id="aviso-pendientes" class="mesa-banner" style="display:none; margin:0 0 20px;"></div>
+
+        <section class="panel">
+            <div class="panel-head">
+                <h3>Por imprimir <span id="contador-por-imprimir" class="tag tag-pendiente" style="margin-left:6px;">0</span></h3>
+                <label class="switch-auto" title="Imprime cada pedido confirmado apenas llega">
+                    <input type="checkbox" id="auto-imprimir" onchange="cambiarAutoImpresion(this.checked)">
+                    Impresión automática
+                </label>
+            </div>
+            <div id="lista-por-imprimir" class="comandas-grid"></div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <h3>Impresas (últimas 12 horas)</h3>
+            </div>
+            <div id="lista-impresas" class="comandas-grid"></div>
+        </section>
+    </main>
+
+    <script src="utils.js?v=20261028j"></script>
+    <script src="comandas.js?v=20261028j"></script>
+</body>
+</html>
