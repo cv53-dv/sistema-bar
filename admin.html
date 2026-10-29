@@ -118,9 +118,45 @@
                 </div>
         </div>
 
+
+        <div class="inventory-zone">
+            <button type="button" class="btn-sec" onclick="abrirInformesStock()"><span class="material-icons">assessment</span>Informes de stock</button>
+            <div id="informes-stock" style="display:none; margin-top:20px;">
+                <h3 style="color:white; margin-bottom:12px;">Inventario actual</h3>
+                <button type="button" class="btn-sec" onclick="descargarInventario()"><span class="material-icons">download</span>CSV</button>
+                <div class="tabla-scroll">
+                    <table class="tabla">
+                        <thead><tr><th>Producto</th><th>Categoría</th><th class="num">Stock</th><th>Estado</th></tr></thead>
+                        <tbody id="tabla-inventario"></tbody>
+                    </table>
+                </div>
+
+                <h3 style="color:white; margin:24px 0 12px;">Movimientos por período</h3>
+                <form class="form-inline" onsubmit="event.preventDefault(); cargarMovimientosStock()" style="margin-bottom:15px;">
+                    <input type="datetime-local" id="mov-desde" class="input-stylish" title="Desde (fecha y hora)">
+                    <input type="datetime-local" id="mov-hasta" class="input-stylish" title="Hasta (fecha y hora)">
+                    <select id="mov-producto" class="input-stylish"></select>
+                    <select id="mov-tipo" class="input-stylish">
+                        <option value="">Todo tipo</option>
+                        <option value="venta">venta</option><option value="anulacion">anulación</option>
+                        <option value="ingreso">ingreso</option><option value="ajuste">ajuste</option>
+                    </select>
+                    <button type="submit" class="btn-sec ok">Buscar</button>
+                    <button type="button" class="btn-sec" onclick="descargarMovimientos()"><span class="material-icons">download</span>CSV</button>
+                </form>
+                <div class="tabla-scroll">
+                    <table class="tabla">
+                        <thead><tr><th>Fecha y hora</th><th>Producto</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Queda</th><th>Usuario</th><th>Motivo</th></tr></thead>
+                        <tbody id="tabla-movimientos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="utils.js?v=20261028j"></script>
     <script src="admin.js?v=20261028j"></script>
+    <script src="stock.js?v=20261029a"></script>
 </body>
 </html>

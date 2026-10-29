@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mesas | Mi Bar</title>
+    <title>Pedidos | Mashbeer</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&family=Playfair+Display:ital,wght@1,400&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=20261028j">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
     <script src="config.js?v=20261028j"></script>
+    <link rel="stylesheet" href="pedido-catalogo.css?v=20261028a">
 </head>
 <body class="admin-body">
 
@@ -63,27 +64,33 @@
         </section>
     </main>
 
-    <!-- MODAL: NUEVO PEDIDO -->
-    <div id="modal-pedido" class="modal" onclick="if(event.target == this) cerrarModal('modal-pedido')">
-        <div class="modal-content" style="max-width:520px;">
-            <div class="close-btn-float" onclick="cerrarModal('modal-pedido')">✕</div>
-            <div class="modal-scroll">
-                <h3 style="color:var(--gold); font-family:'Playfair Display', serif; font-size:1.4rem;">Nuevo pedido</h3>
-                <p id="pedido-mesa-nombre" style="color:#888; font-size:0.85rem; margin-bottom:10px;"></p>
-
-                <input type="text" id="buscar-producto" class="input-stylish" placeholder="Buscar producto..." oninput="renderSelector()">
-                <div id="selector-filtros" class="selector-filtros"></div>
-                <div id="selector-productos" class="lista-scroll"></div>
-
-                <textarea id="pedido-nota" class="input-stylish" rows="2" maxlength="300" placeholder="Nota para la barra/cocina (opcional)" style="margin-top:12px;"></textarea>
-
-                <div class="pie-modal">
-                    <div class="resumen-envio" style="margin-top:0;">
-                        <span id="resumen-cantidad" style="color:#aaa;">0 productos</span>
-                        <span id="resumen-total" style="color:var(--gold); font-size:1.2rem;">Gs. 0</span>
+    <!-- Catálogo de pedidos: imágenes grandes y selección siempre visible. -->
+    <div id="modal-pedido" class="modal catalogo-pedido" role="dialog" aria-modal="true" aria-labelledby="catalogo-titulo">
+        <div class="pedido-pantalla">
+            <header class="pedido-cabecera">
+                <div class="pedido-identidad"><strong>Mashbeer<span>•</span></strong><span id="pedido-mesa-nombre"></span></div>
+                <button type="button" class="pedido-volver" aria-label="Volver a la mesa" onclick="cerrarCatalogoPedido()">✕ <span>Volver a la mesa</span></button>
+            </header>
+            <div class="pedido-layout">
+                <nav id="selector-filtros" class="pedido-categorias" aria-label="Categorías de productos"></nav>
+                <section class="pedido-catalogo" aria-label="Catálogo de productos">
+                    <div class="catalogo-encabezado">
+                        <div><h2 id="catalogo-titulo">¿Qué servimos?</h2><p>Tocá la foto para agregar al pedido.</p></div>
+                        <label class="pedido-buscador"><span aria-hidden="true">⌕</span><input type="search" id="buscar-producto" placeholder="Buscar un producto" aria-label="Buscar un producto" oninput="renderSelector()" autocomplete="off"></label>
                     </div>
-                    <button class="btn-big-action" id="btn-enviar-pedido" onclick="enviarPedido(this)">ENVIAR PEDIDO</button>
-                </div>
+                    <h3 id="catalogo-categoria">Todos los productos</h3>
+                    <div id="selector-productos" class="pedido-productos"></div>
+                </section>
+                <aside class="pedido-ticket" aria-label="Tu pedido">
+                    <div class="ticket-cabecera"><h2>Tu pedido</h2><span id="resumen-cantidad" aria-live="polite">0 productos</span></div>
+                    <div id="pedido-seleccion" class="ticket-lineas"></div>
+                    <label class="pedido-nota-label" for="pedido-nota">Nota para cocina o barra</label>
+                    <textarea id="pedido-nota" rows="2" maxlength="300" placeholder="Ej. sin hielo, sin cebolla…"></textarea>
+                    <footer class="pedido-total">
+                        <div><span>Total del pedido</span><strong id="resumen-total" aria-live="polite">Gs. 0</strong></div>
+                        <button type="button" id="btn-enviar-pedido" onclick="enviarPedido(this)" disabled>Enviar pedido</button>
+                    </footer>
+                </aside>
             </div>
         </div>
     </div>
@@ -138,6 +145,8 @@
     </div>
 
     <script src="utils.js?v=20261028j"></script>
-    <script src="mozo.js?v=20261028j"></script>
+    <script src="mozo-mesas.js?v=20261028a"></script>
+    <script src="mozo-catalogo.js?v=20261028a"></script>
+    <script src="mozo-cobro.js?v=20261028a"></script>
 </body>
 </html>

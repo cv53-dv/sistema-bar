@@ -240,15 +240,25 @@ if(form) {
             }
 
             // El stock solo se envía si cambió: así no se pisan las ventas
-            // que ocurrieron mientras el formulario estaba abierto
+            // que ocurrieron mientras el formulario estaba abierto.
+            // Al editar un producto con control, el cambio va por ajustar_stock (exige motivo).
             const original = inventarioGlobal.find(p => String(p.id) === idEdicion);
+            let motivoAjuste = null;
             if (!idEdicion || !original || original.stock !== stock) {
-                datos.stock = stock;
+                if (idEdicion && stock !== null) {
+                    motivoAjuste = prompt(`Cambiaste el stock de ${original.stock ?? 'sin control'} a ${stock}.\nMotivo del ajuste (ej. conteo físico, rotura, merma):`);
+                    if (motivoAjuste === null) throw new Error("Cambio cancelado: falta el motivo del ajuste de stock.");
+                } else {
+                    datos.stock = stock;
+                }
             }
 
             if (idEdicion) {
                 // --- UPDATE (Editar) ---
                 await actualizarProducto(idEdicion, datos);
+                if (motivoAjuste !== null) {
+                    await llamarRpc('ajustar_stock', { p_producto_id: Number(idEdicion), p_nuevo_stock: stock, p_motivo: motivoAjuste });
+                }
             } else {
                 // --- INSERT (Crear) ---
                 datos.estado = 'disponible';
